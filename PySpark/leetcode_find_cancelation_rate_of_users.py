@@ -1,3 +1,5 @@
+# Question | https://leetcode.com/problems/trips-and-users/description/
+
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType, BooleanType, TimestampType, DateType
 from datetime import datetime
 from pyspark.sql.functions import col, count, when, round
