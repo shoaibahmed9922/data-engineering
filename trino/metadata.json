@@ -12,7 +12,7 @@
                     "type": "BIGINT"
                 }
             ],
-            "sources": [ "https://raw.githubusercontent.com/shoaibahmed9922/data-engineering/main/trino/numbers-1.csv", "numbers-2.csv" ]
+            "sources": [ "https://raw.githubusercontent.com/shoaibahmed9922/data-engineering/main/trino/numbers.csv" ]
         }
     ],
     "tpch": [
