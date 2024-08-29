@@ -13,6 +13,24 @@
                 }
             ],
             "sources": [ "https://raw.githubusercontent.com/shoaibahmed9922/data-engineering/main/trino/numbers.csv" ]
+        },
+        {
+            "name": "fruits",
+            "columns": [
+                {
+                    "name": "fruit",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "size",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "color",
+                    "type": "VARCHAR"
+                }
+            ],
+            "sources": [ "https://raw.githubusercontent.com/shoaibahmed9922/data-engineering/main/trino/fruits.json" ]
         }
     ],
     "tpch": [
