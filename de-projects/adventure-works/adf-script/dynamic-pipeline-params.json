@@ -1,0 +1,52 @@
+[
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Calendar.csv",
+        "sink_folder_param": "AdventureWorks_Calendar",
+        "filename_param": "AdventureWorks_Calendar.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Customers.csv",
+        "sink_folder_param": "AdventureWorks_Customers",
+        "filename_param": "AdventureWorks_Customers.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Product_Categories.csv",
+        "sink_folder_param": "AdventureWorks_Product_Categories",
+        "filename_param": "AdventureWorks_Product_Categories.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Product_Subcategories.csv",
+        "sink_folder_param": "AdventureWorks_Product_Subcategories",
+        "filename_param": "AdventureWorks_Product_Subcategories.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Products.csv",
+        "sink_folder_param": "AdventureWorks_Products",
+        "filename_param": "AdventureWorks_Products.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Returns.csv",
+        "sink_folder_param": "AdventureWorks_Returns",
+        "filename_param": "AdventureWorks_Returns.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Sales_2015.csv",
+        "sink_folder_param": "AdventureWorks_Sales_2015",
+        "filename_param": "AdventureWorks_Sales_2015.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Sales_2016.csv",
+        "sink_folder_param": "AdventureWorks_Sales_2016",
+        "filename_param": "AdventureWorks_Sales_2016.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Sales_2017.csv",
+        "sink_folder_param": "AdventureWorks_Sales_2017",
+        "filename_param": "AdventureWorks_Sales_2017.csv"
+    },
+    {
+        "rel_url_param": "shoaibahmed9922/data-engineering/refs/heads/main/de-projects/adventure-works/data/AdventureWorks_Territories.csv",
+        "sink_folder_param": "AdventureWorks_Territories",
+        "filename_param": "AdventureWorks_Territories.csv"
+    }
+]
