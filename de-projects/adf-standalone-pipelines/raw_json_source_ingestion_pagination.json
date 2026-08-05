@@ -1,0 +1,215 @@
+{
+    "name": "API",
+    "properties": {
+        "activities": [
+            {
+                "name": "Call API",
+                "type": "WebActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "method": "GET",
+                    "url": "https://pokeapi.co/api/v2/pokemon?"
+                }
+            },
+            {
+                "name": "Until",
+                "type": "Until",
+                "dependsOn": [
+                    {
+                        "activity": "Set current_offset",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@greaterOrEquals(variables('current_offset1'), variables('total_count1'))",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Load API Data",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "RestSource",
+                                    "httpRequestTimeout": "00:01:40",
+                                    "requestInterval": "00.00:00:00.010",
+                                    "requestMethod": "GET"
+                                },
+                                "sink": {
+                                    "type": "JsonSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "JsonWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "ds_REST",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "offset": {
+                                            "value": "@string(variables('current_offset1'))",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "ds_api",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "file_name": {
+                                            "value": "@concat('pokemon_', string(variables('current_offset1')), '.json')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Increment offset1",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set temp_var",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "current_offset1",
+                                "value": {
+                                    "value": "@add(variables('temp_var'), 20)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set temp_var",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Load API Data",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "temp_var",
+                                "value": {
+                                    "value": "@variables('current_offset1')",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "timeout": "0.12:00:00"
+                }
+            },
+            {
+                "name": "Set total_count",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Call API",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "total_count1",
+                    "value": {
+                        "value": "@int(activity('Call API').output.count)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Set current_offset",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Set total_count",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "current_offset1",
+                    "value": 0
+                }
+            }
+        ],
+        "variables": {
+            "currentOffset": {
+                "type": "String"
+            },
+            "total_count": {
+                "type": "String"
+            },
+            "current_offset": {
+                "type": "String"
+            },
+            "total_count1": {
+                "type": "Integer"
+            },
+            "current_offset1": {
+                "type": "Integer"
+            },
+            "temp_var": {
+                "type": "Integer"
+            }
+        },
+        "annotations": []
+    }
+}
