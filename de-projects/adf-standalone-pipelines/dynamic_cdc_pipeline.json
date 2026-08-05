@@ -1,0 +1,378 @@
+{
+    "name": "cdc_pipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "last_cdc",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "JsonSource",
+                        "storeSettings": {
+                            "type": "AzureBlobFSReadSettings",
+                            "recursive": true,
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "JsonReadSettings"
+                        }
+                    },
+                    "dataset": {
+                        "referenceName": "ds_cdc",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "total_record",
+                "type": "Script",
+                "dependsOn": [
+                    {
+                        "activity": "Load Mode Switch",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "linkedServiceName": {
+                    "referenceName": "ls_database",
+                    "type": "LinkedServiceReference"
+                },
+                "typeProperties": {
+                    "scripts": [
+                        {
+                            "type": "Query",
+                            "text": {
+                                "value": "@{variables('count_query')}",
+                                "type": "Expression"
+                            }
+                        }
+                    ],
+                    "scriptBlockExecutionTimeout": "02:00:00"
+                }
+            },
+            {
+                "name": "If New Rows",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "total_record",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@greater(activity('total_record').output.resultSets[0].rows[0].total_count, 0)",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "load_data",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@{variables('source_query')}",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "sink": {
+                                    "type": "ParquetSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "ds_database",
+                                    "type": "DatasetReference"
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "ds_sink",
+                                    "type": "DatasetReference"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Get Max Date",
+                            "type": "Lookup",
+                            "state": "Inactive",
+                            "onInactiveMarkAs": "Succeeded",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": {
+                                        "value": "SELECT MAX(last_updated) as max_date FROM @{pipeline().parameters.schema}.@{pipeline().parameters.table}",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "ds_database",
+                                    "type": "DatasetReference"
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "Update WaterMark",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "load_data",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": {
+                                        "value": "SELECT MAX(last_updated) as cdc_timestamp FROM @{pipeline().parameters.schema}.@{pipeline().parameters.table}",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "sink": {
+                                    "type": "JsonSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "JsonWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "ds_database",
+                                    "type": "DatasetReference"
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "Json1",
+                                    "type": "DatasetReference"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Load Mode Switch",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "last_cdc",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@pipeline().parameters.load_mode",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "CDC",
+                            "activities": [
+                                {
+                                    "name": "cdc_set_source_query",
+                                    "type": "SetVariable",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "source_query",
+                                        "value": {
+                                            "value": "@concat(\n'SELECT * FROM ',\npipeline().parameters.schema,\n'.',\npipeline().parameters.table,\n' WHERE last_updated > CAST(''',\nactivity('last_cdc').output.value[0].cdc_timestamp,\n''' AS DATETIME2)'\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "cdc_set_count_query",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "cdc_set_source_query",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "count_query",
+                                        "value": {
+                                            "value": "@concat(\n'SELECT COUNT(*) AS total_count FROM ',\npipeline().parameters.schema,\n'.',\npipeline().parameters.table,\n' WHERE last_updated > CAST(''',\nactivity('last_cdc').output.value[0].cdc_timestamp,\n''' AS DATETIME2)'\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "BACKFILL",
+                            "activities": [
+                                {
+                                    "name": "backfill_set_source_query",
+                                    "type": "SetVariable",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "source_query",
+                                        "value": {
+                                            "value": "@concat(\n'SELECT * FROM ',\npipeline().parameters.schema,\n'.',\npipeline().parameters.table,\n' WHERE last_updated >= CAST(''',\npipeline().parameters.backfill_start,\n''' AS DATETIME2)',\n' AND last_updated < CAST(''',\npipeline().parameters.backfill_end,\n''' AS DATETIME2)'\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "backfill_set_count_query",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "backfill_set_source_query",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "count_query",
+                                        "value": {
+                                            "value": "@concat(\n'SELECT COUNT(*) AS total_count FROM ',\npipeline().parameters.schema,\n'.',\npipeline().parameters.table,\n' WHERE last_updated >= CAST(''',\npipeline().parameters.backfill_start,\n''' AS DATETIME2)',\n' AND last_updated < CAST(''',\npipeline().parameters.backfill_end,\n''' AS DATETIME2)'\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "schema": {
+                "type": "string",
+                "defaultValue": "source"
+            },
+            "table": {
+                "type": "string",
+                "defaultValue": "orders"
+            },
+            "load_mode": {
+                "type": "string",
+                "defaultValue": "CDC"
+            },
+            "backfill_start": {
+                "type": "string"
+            },
+            "backfill_end": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "max_cdc": {
+                "type": "String"
+            },
+            "source_query": {
+                "type": "String"
+            },
+            "count_query": {
+                "type": "String"
+            }
+        },
+        "annotations": []
+    }
+}
